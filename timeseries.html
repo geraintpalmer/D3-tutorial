@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SSI - RDVW - D3 Example</title>
+    <!-- D3 Version 4 -->
+    <script src="http://d3js.org/d3.v4.min.js"></script>
+    <!-- Colorbrewer Library for colour scales -->
+    <script src="http://d3js.org/colorbrewer.v1.js"></script>
+    <!-- Import sample data -->
+    <script type="text/javascript" language="javascript" src="sampledata2.json"></script> 
+    <!-- Minimal styling -->
+    <style>
+        html, body, #vis {
+            margin: 0;
+            height: 100%;
+            font-family: sans-serif;
+        }
+
+        form {
+            padding: 10px;
+        }
+
+    </style>
+</head>
+<body>
+    <!-- Input values for data creation -->
+    <form>
+        <input type="button" onclick="update()" value="Update"/>
+        <div id="series">
+            <label><input type="checkbox" name="Series1" id="series1"/> Series 1</label>
+            <label><input type="checkbox" name="Series2" id="series2"/> Series 2</label>
+        </div>
+    </form>
+
+    <!-- Visualisation will go here -->
+    <div id="vis"></div>
+
+    <!-- The code! -->
+    <script>
+
+        /*
+         *  DECLARATION BLOCK STARTS
+         */
+        var view_width = document.getElementById("vis").clientWidth;
+        var view_height = document.getElementById("vis").clientHeight;
+
+        var margin = {top: 50, bottom: 100, left: 100, right: 150};
+
+        var width = view_width - margin.left - margin.right;
+        var height = view_height - margin.top - margin.bottom;
+
+        var svg = d3.select('#vis')
+            .append('svg')
+                .attr('height', height + margin.top + margin.bottom)
+                .attr('width', width + margin.left + margin.right)
+            .append('g')
+                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+        var x_scale = d3.scaleLinear()
+            .rangeRound([0, width]);
+
+        var y_scale = d3.scaleLinear()
+            .rangeRound([height, 0]);
+
+        var y_axis = d3.axisLeft(y_scale);
+        var x_axis = d3.axisBottom(x_scale);
+
+        svg.append("g")
+            .attr("class", "y axis")
+
+        svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + (height) + ")");
+
+
+
+        /*
+         *  DECLARATION BLOCK ENDS
+         */
+
+        function update() {
+            /*
+                Update function reads the input values, creates random data, and updates the visualisation accordingly
+            */
+
+            var s1 = document.getElementById('series1');
+            var s2 = document.getElementById('series2');
+
+
+            x_scale.domain([0, d3.max(mydata, function(d){ return d.idx; })]);
+            if (s1.checked && s2.checked) {
+                y_scale.domain([0, d3.max(mydata, function(d){ return Math.max(d.point1, d.point2); })]);
+            } else if (s1.checked) {
+                y_scale.domain([0, d3.max(mydata, function(d){ return d.point1; })]);
+            } else if (s2.checked) {
+                y_scale.domain([0, d3.max(mydata, function(d){ return d.point2; })]);
+            } else {
+                y_scale.domain([0, d3.max(mydata, function(d){ return Math.max(d.point1, d.point2); })]);
+            }
+
+
+            // Add the valueline path.            
+            var valueline1 = d3.line()
+                .x(function(d) { return x_scale(d.idx); })
+                .y(function(d) { return y_scale(d.point1); });
+
+            var valueline2 = d3.line()
+                .x(function(d) { return x_scale(d.idx); })
+                .y(function(d) { return y_scale(d.point2); });
+
+            var t = d3.transition()
+                .duration(800);
+
+            svg.selectAll("path").remove();
+
+            if (s1.checked){
+                svg.append('path')
+                    .datum(mydata)
+                    .attr("class", "line")
+                    .attr("fill", "none")
+                    .attr("stroke", "red")
+                    .transition(t)
+                    .attr("stroke-width", 2)
+                    .attr('d', valueline1);
+            }
+
+            if (s2.checked){
+                svg.append('path')
+                    .datum(mydata)
+                    .attr("class", "line")
+                    .attr("fill", "none")
+                    .attr("stroke", "blue")
+                    .transition(t)
+                    .attr("stroke-width", 2)
+                    .attr('d', valueline2);
+
+            }
+
+
+            d3.select('.x.axis')
+                .transition(t) 
+                .call(x_axis);
+            d3.select('.y.axis')
+                .transition(t) 
+                .call(y_axis);
+
+            }
+
+
+
+        // call the update on page load to intialise the visualisation
+        update();
+
+    </script>
+
+</body>
+</html>

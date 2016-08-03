@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,6 +7,8 @@
     <script src="http://d3js.org/d3.v4.min.js"></script>
     <!-- Colorbrewer Library for colour scales -->
     <script src="http://d3js.org/colorbrewer.v1.js"></script>
+    <!-- Import sample data -->
+    <script type="text/javascript" language="javascript" src="sampledata.json"></script> 
     <!-- Minimal styling -->
     <style>
         html, body, #vis {
@@ -26,14 +27,13 @@
     <!-- Input values for data creation -->
     <form>
         <input type="button" onclick="update()" value="Update"/>
-        Max Height:
-        <input type="range" value="50" min="0" max="100" id="maximumHeight">
-        Max Weight:
-        <input type="range" value="50" min="0" max="100" id="maximumWeight">
-        Max IQ:
-        <input type="range" value="50" min="0" max="100" id="maximumIQ">
-        Max Speed:
-        <input type="range" value="50" min="0" max="100" id="maximumSpeed">
+        Number of Bins:
+        <input type="range" name="numberofbins" id="numberofbins" value="5" min="0" max="30" oninput="numberofbinsOutput.value = numberofbins.value">
+        <output name="numberofbinsOutput" id="numberofbinsOutput">5</output>
+
+        <input id="choice" type="radio" name="choice" value="A" checked> A
+        <input id="choice" type="radio" name="choice" value="B"> B
+        <input id="choice" type="radio" name="choice" value="C"> C
     </form>
 
     <!-- Visualisation will go here -->
@@ -53,9 +53,6 @@
         var width = view_width - margin.left - margin.right;
         var height = view_height - margin.top - margin.bottom;
 
-        var maxDataItems = 150;
-        var maxArea = 800;
-
         var svg = d3.select('#vis')
             .append('svg')
                 .attr('height', height + margin.top + margin.bottom)
@@ -74,21 +71,43 @@
             var t = d3.transition()
                 .duration(2000);
 
-            var maxHeightValue = d3.select('#maximumHeight').node().value;
-            var maxWeightValue = d3.select('#maximumWeight').node().value;
-            var maxIQ = d3.select('#maximumIQ').node().value;
-            var maxSpeed = d3.select('#maximumSpeed').node().value;
+            var numberofbins = d3.select('#numberofbins').node().value;
+            var choice = document.querySelector('input[name="choice"]:checked').value;
 
-            var exampleData = createRandomData(maxDataItems, maxHeightValue, maxWeightValue, maxIQ, maxSpeed);
+            console.log(choice)
+
+            if (choice == 'A'){
+                var maxValue = d3.max(mydata, function(d){ return d.variableA; });
+            };
+            if (choice == 'B'){
+                var maxValue = d3.max(mydata, function(d){ return d.variableB; });
+            };
+            if (choice == 'C'){
+                var maxValue = d3.max(mydata, function(d){ return d.variableC; });
+            };
 
             var x_scale = d3.scaleLinear()
                 .rangeRound([0, width]);
-            x_scale.domain([0, maxHeightValue]);
+            x_scale.domain([0, maxValue]);
 
-            var bins = d3.histogram()
+            if (choice == 'A'){
+                var bins = d3.histogram()
                 .domain(x_scale.domain())
-                .thresholds(x_scale.ticks(20))
-                (exampleData.map(function(d) {return d.Height;}));
+                .thresholds(x_scale.ticks(numberofbins))
+                (mydata.map(function(d) {return d.variableA;}));
+            };
+            if (choice == 'B'){
+                var bins = d3.histogram()
+                .domain(x_scale.domain())
+                .thresholds(x_scale.ticks(numberofbins))
+                (mydata.map(function(d) {return d.variableB;}));
+            };
+            if (choice == 'C'){
+                var bins = d3.histogram()
+                .domain(x_scale.domain())
+                .thresholds(x_scale.ticks(numberofbins))
+                (mydata.map(function(d) {return d.variableC;}));
+            };
 
 
             var y_scale = d3.scaleLinear()
@@ -96,6 +115,9 @@
                 .range([height, 0]);
 
             svg.selectAll(".bar").remove();
+
+            console.log(bins.map(function(d) {return d.x0}))
+            console.log(width)
 
             var bar = svg.selectAll(".bar")
                 .data(bins);
@@ -113,11 +135,12 @@
 
             newbar.merge(bar)
                 .append("rect")
-                .attr("x", function(d) { return (d.x1*width)/maxValue; })
+                .transition()
+                .attr("x", function(d) { return (d.x0*width)/maxValue; })
                 .attr("fill", 'red')
                 .attr("width", x_scale(bins[0].x1) - x_scale(bins[0].x0) - 1)
-                .attr("height", function(d) { return y_scale(d.length); })
-                .attr("y", function(d) { return height - y_scale(d.length); });
+                .attr("height", function(d) { return height - y_scale(d.length); })
+                .attr("y", function(d) { return y_scale(d.length); });
 
         }
 
@@ -125,30 +148,6 @@
         // call the update on page load to intialise the visualisation
         update();
 
-
-        function createRandomData(maxDataItems, maxHeightValue, maxWeightValue, maxIQValue, maxSpeedValue) {
-            /*
-             * function to create an array of random data objects of size X,
-             * where 1 <= X <= maxDataItems
-             * Each object has properties "Height", "Weight", "IQ", "Speed", with
-             * values V, where 1 <= V <= maxValue
-             */
-            var numDataItems = Math.floor((Math.random() * maxDataItems) + 1);
-            var d = [];
-            for(var i = 0; i < numDataItems; i++) {
-                var height = Math.floor((Math.random() * maxHeightValue) + 1);
-                var weight = Math.floor((Math.random() * maxWeightValue) + 1);
-                var iq = Math.floor((Math.random() * maxIQValue) + 1);
-                var speed = Math.floor((Math.random() * maxSpeedValue) + 1)
-                d.push({
-                    "Height": height,
-                    "Weight": weight,
-                    "IQ": iq,
-                    "Speed": speed
-                });
-            }
-            return d;
-        }
     </script>
 
 </body>
